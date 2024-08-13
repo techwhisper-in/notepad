@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Online Notepad</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<div class="notepad">
+		<textarea id="notepad" placeholder="Start typing..."></textarea>
+		<button id="save" onclick="saveFile()">Save As</button>
+		<button id="clear">Clear</button>
+		<button id="find">Find</button>
+		<input id="search" type="text" placeholder="Search...">
+		<div id="result"></div>
+
+		<input type="text" id="findText" placeholder="Find...">
+        <button onclick="findText()">Find</button>
+	</div>
+	<script src="script.js"></script>
+</body>
+</html>
