@@ -202,20 +202,7 @@
       background: inherit;
       color: inherit;
       overflow-y: auto;
-    }
-
-    /* Fix for lists */
-    #editor ul, #editor ol {
-      padding-left: 2rem;
-      margin: 0.5rem 0;
-    }
-
-    #editor ul {
-      list-style-type: disc;
-    }
-
-    #editor ol {
-      list-style-type: decimal;
+      white-space: pre-wrap;
     }
 
     .format-toolbar {
@@ -319,6 +306,109 @@
       margin-bottom: 1rem;
     }
 
+    /* Find/Replace Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+    }
+
+    .modal-content {
+      background-color: var(--menu-bg);
+      margin: 15% auto;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      width: 400px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .modal-title {
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close:hover {
+      color: var(--primary);
+    }
+
+    .search-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .search-input {
+      padding: 0.6rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      font-family: inherit;
+      background: var(--menu-bg);
+      color: inherit;
+    }
+
+    .search-options {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .search-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .search-btn {
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+
+    .search-btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .search-btn-primary:hover {
+      background: var(--primary-light);
+    }
+
+    .search-btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: inherit;
+    }
+
+    .search-btn-secondary:hover {
+      background: var(--border-color);
+    }
+
     /* Print styles */
     @media print {
       body * {
@@ -390,6 +480,15 @@
       .menu-bar {
         flex-wrap: wrap;
       }
+
+      .modal-content {
+        width: 90%;
+      }
+    }
+
+    .highlight {
+      background-color: yellow;
+      color: black;
     }
   </style>
 </head>
@@ -437,13 +536,25 @@
       <div class="dropdown">
         <button class="menu-btn"><i class="fas fa-edit"></i> Edit</button>
         <div class="dropdown-content">
-          <button class="btn" onclick="document.execCommand('undo')">
+          <button class="btn" onclick="document.execCommand('undo', false)">
             <i class="fas fa-undo"></i>
             <span>Undo</span>
           </button>
-          <button class="btn" onclick="document.execCommand('redo')">
+          <button class="btn" onclick="document.execCommand('redo', false)">
             <i class="fas fa-redo"></i>
             <span>Redo</span>
+          </button>
+          <button class="btn" onclick="insertDateTime()">
+            <i class="fas fa-clock"></i>
+            <span>Date/Time</span>
+          </button>
+          <button class="btn" onclick="showFindModal()">
+            <i class="fas fa-search"></i>
+            <span>Find</span>
+          </button>
+          <button class="btn" onclick="showReplaceModal()">
+            <i class="fas fa-exchange-alt"></i>
+            <span>Replace</span>
           </button>
           <button class="btn" onclick="cutText()">
             <i class="fas fa-cut"></i>
@@ -465,32 +576,6 @@
       </div>
 
       <div class="dropdown">
-        <button class="menu-btn"><i class="fas fa-font"></i> Format</button>
-        <div class="dropdown-content">
-          <div class="select-group">
-            <select id="fontfamily" onchange="setFontFamily(this.value)">
-              <option value="Inter">Inter</option>
-              <option value="Roboto Mono" selected>Roboto Mono</option>
-              <option value="Source Code Pro">Source Code Pro</option>
-              <option value="Montserrat">Montserrat</option>
-              <option value="Open Sans">Open Sans</option>
-              <option value="Playfair Display">Playfair Display</option>
-              <option value="Arial">Arial</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Courier New">Courier New</option>
-            </select>
-            <select id="fontsize" onchange="setFontSize(this.value)">
-              <option value="14px">Small</option>
-              <option value="16px" selected>Normal</option>
-              <option value="18px">Large</option>
-              <option value="20px">X-Large</option>
-              <option value="24px">XX-Large</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="dropdown">
         <button class="menu-btn"><i class="fas fa-palette"></i> Theme</button>
         <div class="dropdown-content">
           <div class="select-group">
@@ -507,30 +592,6 @@
     <div class="main-content">
       <div class="editor-container">
         <div class="format-toolbar">
-          <button class="format-btn" onclick="toggleTextStyle('bold')" title="Bold">
-            <i class="fas fa-bold"></i>
-          </button>
-          <button class="format-btn" onclick="toggleTextStyle('italic')" title="Italic">
-            <i class="fas fa-italic"></i>
-          </button>
-          <button class="format-btn" onclick="toggleTextStyle('underline')" title="Underline">
-            <i class="fas fa-underline"></i>
-          </button>
-          <button class="format-btn" onclick="toggleAlignment('left')" title="Align Left">
-            <i class="fas fa-align-left"></i>
-          </button>
-          <button class="format-btn" onclick="toggleAlignment('center')" title="Align Center">
-            <i class="fas fa-align-center"></i>
-          </button>
-          <button class="format-btn" onclick="toggleAlignment('right')" title="Align Right">
-            <i class="fas fa-align-right"></i>
-          </button>
-          <button class="format-btn" onclick="insertList('bullet')" title="Bullet List">
-            <i class="fas fa-list-ul"></i>
-          </button>
-          <button class="format-btn" onclick="insertList('number')" title="Numbered List">
-            <i class="fas fa-list-ol"></i>
-          </button>
           <button class="format-btn" onclick="zoomIn()" title="Zoom In">
             <i class="fas fa-search-plus"></i>
           </button>
@@ -540,12 +601,9 @@
           <button class="format-btn" onclick="resetZoom()" title="Reset Zoom">
             <i class="fas fa-search"></i>
           </button>
-          <button class="format-btn" onclick="toggleWordWrap()" title="Toggle Word Wrap">
-            <i class="fas fa-text-width"></i>
-          </button>
         </div>
 
-        <div id="editor" contenteditable="true" spellcheck="false" oninput="autoSave(); updateStats()" style="word-wrap: break-word;"></div>
+        <div id="editor" contenteditable="true" spellcheck="false" oninput="autoSave(); updateStats()"></div>
 
         <div class="statusbar">
           <div class="status-item">
@@ -565,10 +623,55 @@
     </div>
   </div>
 
+  <!-- Find Modal -->
+  <div id="findModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Find</h3>
+        <span class="close" onclick="closeFindModal()">&times;</span>
+      </div>
+      <div class="search-input-group">
+        <input type="text" id="findInput" class="search-input" placeholder="Find...">
+      </div>
+      <div class="search-options">
+        <input type="checkbox" id="matchCase">
+        <label for="matchCase">Match case</label>
+      </div>
+      <div class="search-buttons">
+        <button class="search-btn search-btn-secondary" onclick="closeFindModal()">Cancel</button>
+        <button class="search-btn search-btn-primary" onclick="findText()">Find Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Replace Modal -->
+  <div id="replaceModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Replace</h3>
+        <span class="close" onclick="closeReplaceModal()">&times;</span>
+      </div>
+      <div class="search-input-group">
+        <input type="text" id="replaceFindInput" class="search-input" placeholder="Find...">
+        <input type="text" id="replaceWithInput" class="search-input" placeholder="Replace with...">
+      </div>
+      <div class="search-options">
+        <input type="checkbox" id="replaceMatchCase">
+        <label for="replaceMatchCase">Match case</label>
+      </div>
+      <div class="search-buttons">
+        <button class="search-btn search-btn-secondary" onclick="closeReplaceModal()">Cancel</button>
+        <button class="search-btn search-btn-primary" onclick="replaceText()">Replace</button>
+        <button class="search-btn search-btn-primary" onclick="replaceAllText()">Replace All</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let filename = 'Untitled.txt';
     let zoomLevel = 1.0;
-    let wrapEnabled = true;
+    let currentFindIndex = -1;
+    let findResults = [];
 
     function newFile() {
       if(confirm("Create a new document? Unsaved changes will be lost.")) {
@@ -587,7 +690,7 @@
       document.getElementById('filename').textContent = filename;
       const reader = new FileReader();
       reader.onload = function(e) {
-        document.getElementById('editor').innerHTML = e.target.result;
+        document.getElementById('editor').innerText = e.target.result;
         updateStats();
         autoSave();
       }
@@ -620,11 +723,8 @@
     }
 
     function printDoc() {
-      // Create a print-friendly version with formatting preserved
       const printWindow = window.open('', '_blank');
-      const editorContent = document.getElementById('editor').innerHTML;
-      const fontFamily = document.getElementById('editor').style.fontFamily || 'Arial';
-      const fontSize = document.getElementById('editor').style.fontSize || '12pt';
+      const editorContent = document.getElementById('editor').innerText;
       
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -633,21 +733,12 @@
           <title>Print Document</title>
           <style>
             body {
-              font-family: ${fontFamily};
-              font-size: ${fontSize};
+              font-family: Arial;
+              font-size: 12pt;
               line-height: 1.6;
               padding: 1in;
               color: #000;
               background: #fff;
-            }
-            ul, ol {
-              padding-left: 1.5em;
-            }
-            ul {
-              list-style-type: disc;
-            }
-            ol {
-              list-style-type: decimal;
             }
             @media print {
               body {
@@ -658,14 +749,13 @@
           </style>
         </head>
         <body>
-          <div>${editorContent}</div>
+          <pre>${editorContent}</pre>
         </body>
         </html>
       `);
       
       printWindow.document.close();
       
-      // Wait for content to load before printing
       setTimeout(function() {
         printWindow.focus();
         printWindow.print();
@@ -680,24 +770,24 @@
     }
 
     // Edit actions
-    function cutText() { document.execCommand('cut'); }
-    function copyText() { document.execCommand('copy'); }
+    function cutText() { 
+      document.execCommand('cut'); 
+    }
     
-    // Fixed paste functionality
+    function copyText() { 
+      document.execCommand('copy'); 
+    }
+    
     function pasteText() { 
-      // Focus on editor first
       document.getElementById('editor').focus();
       
-      // Use modern clipboard API if available
       if (navigator.clipboard && navigator.clipboard.readText) {
         navigator.clipboard.readText().then(text => {
           document.execCommand('insertText', false, text);
         }).catch(err => {
-          // Fallback to traditional paste
           document.execCommand('paste');
         });
       } else {
-        // Traditional paste method
         document.execCommand('paste');
       }
     }
@@ -711,55 +801,202 @@
       sel.addRange(range);
     }
 
-    // Zoom
-    function zoomIn() { zoomLevel *= 1.1; setZoom(); }
-    function zoomOut() { zoomLevel /= 1.1; setZoom(); }
-    function resetZoom() { zoomLevel = 1; setZoom(); }
-    function setZoom() {
-      document.getElementById('editor').style.fontSize = (16 * zoomLevel) + 'px';
-      // Fix for lists on zoom
-      document.getElementById('editor').style.paddingLeft = (1.15 * zoomLevel) + 'rem';
-      document.getElementById('editor').style.paddingRight = (1.15 * zoomLevel) + 'rem';
+    // Insert Date/Time
+    function insertDateTime() {
+      const now = new Date();
+      const dateTimeStr = now.toLocaleString();
+      document.execCommand('insertText', false, dateTimeStr);
     }
 
-    // Formatting
-    function setFontFamily(f) {
-      document.getElementById('editor').style.fontFamily = f;
-      autoSave();
+    // Zoom
+    function zoomIn() { 
+      zoomLevel *= 1.1; 
+      setZoom(); 
     }
-    function setFontSize(s) {
-      document.getElementById('editor').style.fontSize = s;
-      autoSave();
+    
+    function zoomOut() { 
+      zoomLevel /= 1.1; 
+      setZoom(); 
     }
-    function toggleTextStyle(type) {
-      document.execCommand(type, false, null);
+    
+    function resetZoom() { 
+      zoomLevel = 1; 
+      setZoom(); 
     }
-    function toggleAlignment(type) {
-      document.execCommand('justify' + type, false, null);
+    
+    function setZoom() {
+      document.getElementById('editor').style.fontSize = (16 * zoomLevel) + 'px';
     }
-    function insertList(type) {
-      if(type === 'bullet')
-        document.execCommand('insertUnorderedList', false, null);
-      else
-        document.execCommand('insertOrderedList', false, null);
+
+    // Find/Replace functionality
+    function showFindModal() {
+      document.getElementById('findModal').style.display = 'block';
+      document.getElementById('findInput').focus();
     }
-    function toggleWordWrap() {
+
+    function closeFindModal() {
+      document.getElementById('findModal').style.display = 'none';
+      removeHighlights();
+    }
+
+    function showReplaceModal() {
+      document.getElementById('replaceModal').style.display = 'block';
+      document.getElementById('replaceFindInput').focus();
+    }
+
+    function closeReplaceModal() {
+      document.getElementById('replaceModal').style.display = 'none';
+      removeHighlights();
+    }
+
+    function findText() {
+      let searchTerm = document.getElementById('findInput').value;
+      const matchCase = document.getElementById('matchCase').checked;
+      
+      if (!searchTerm) return;
+      
       const editor = document.getElementById('editor');
-      wrapEnabled = !wrapEnabled;
-      editor.style.whiteSpace = wrapEnabled ? 'pre-wrap' : 'pre';
-      editor.style.overflowX = wrapEnabled ? 'visible' : 'auto';
+      const content = editor.innerText;
+      let searchContent = content;
+      
+      if (!matchCase) {
+        searchContent = content.toLowerCase();
+        searchTerm = searchTerm.toLowerCase();
+      }
+      
+      // Remove previous highlights
+      removeHighlights();
+      
+      // Find all occurrences
+      findResults = [];
+      let index = -1;
+      
+      while ((index = searchContent.indexOf(searchTerm, index + 1)) !== -1) {
+        findResults.push(index);
+      }
+      
+      if (findResults.length === 0) {
+        alert("No matches found");
+        return;
+      }
+      
+      // Move to next result
+      currentFindIndex = (currentFindIndex + 1) % findResults.length;
+      highlightCurrentFind();
+    }
+
+    function highlightCurrentFind() {
+      if (currentFindIndex < 0 || currentFindIndex >= findResults.length) return;
+      
+      const editor = document.getElementById('editor');
+      const searchTerm = document.getElementById('findInput').value;
+      const startPos = findResults[currentFindIndex];
+      const endPos = startPos + searchTerm.length;
+      
+      // Create range and select the text
+      const range = document.createRange();
+      range.setStart(editor.firstChild, startPos);
+      range.setEnd(editor.firstChild, endPos);
+      
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // Scroll to the selection
+      editor.focus();
+      range.collapse(true);
+      const rect = range.getBoundingClientRect();
+      window.scrollTo(rect.left, rect.top - 100);
+    }
+
+    function removeHighlights() {
+      currentFindIndex = -1;
+      findResults = [];
+      
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        selection.removeAllRanges();
+      }
+    }
+
+    function replaceText() {
+      let findTerm = document.getElementById('replaceFindInput').value;
+      const replaceTerm = document.getElementById('replaceWithInput').value;
+      const matchCase = document.getElementById('replaceMatchCase').checked;
+      
+      if (!findTerm) return;
+      
+      const editor = document.getElementById('editor');
+      const content = editor.innerText;
+      let searchContent = content;
+      
+      if (!matchCase) {
+        searchContent = content.toLowerCase();
+        findTerm = findTerm.toLowerCase();
+      }
+      
+      const index = searchContent.indexOf(findTerm);
+      
+      if (index === -1) {
+        alert("No matches found");
+        return;
+      }
+      
+      // Create range and select the text
+      const range = document.createRange();
+      range.setStart(editor.firstChild, index);
+      range.setEnd(editor.firstChild, index + findTerm.length);
+      
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // Replace the selected text
+      document.execCommand('insertText', false, replaceTerm);
+      
+      updateStats();
+      autoSave();
+    }
+
+    function replaceAllText() {
+      let findTerm = document.getElementById('replaceFindInput').value;
+      const replaceTerm = document.getElementById('replaceWithInput').value;
+      const matchCase = document.getElementById('replaceMatchCase').checked;
+      
+      if (!findTerm) return;
+      
+      const editor = document.getElementById('editor');
+      let content = editor.innerText;
+      
+      if (matchCase) {
+        // Case sensitive replacement
+        const regex = new RegExp(escapeRegExp(findTerm), 'g');
+        content = content.replace(regex, replaceTerm);
+      } else {
+        // Case insensitive replacement
+        const regex = new RegExp(escapeRegExp(findTerm), 'gi');
+        content = content.replace(regex, replaceTerm);
+      }
+      
+      editor.innerText = content;
+      updateStats();
+      autoSave();
+      closeReplaceModal();
+    }
+
+    // Helper function to escape special regex characters
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     // Auto-save/Load
     function autoSave() {
-      const content = document.getElementById('editor').innerHTML;
+      const content = document.getElementById('editor').innerText;
       const settings = {
         filename: filename,
         content: content,
-        font: document.getElementById('editor').style.fontFamily,
-        size: document.getElementById('editor').style.fontSize,
         theme: document.body.getAttribute('data-theme'),
-        wrap: wrapEnabled,
+        zoom: zoomLevel
       };
       localStorage.setItem('webnotepad_autosave', JSON.stringify(settings));
       document.getElementById('autosave').textContent = "Auto-saved";
@@ -771,13 +1008,11 @@
         const s = JSON.parse(save);
         filename = s.filename || 'Untitled.txt';
         document.getElementById('filename').textContent = filename;
-        document.getElementById('editor').innerHTML = s.content || '';
-        document.getElementById('editor').style.fontFamily = s.font || 'Roboto Mono';
-        document.getElementById('editor').style.fontSize = s.size || '16px';
+        document.getElementById('editor').innerText = s.content || '';
         document.body.setAttribute('data-theme', s.theme || 'light');
         document.getElementById('themechooser').value = s.theme || 'light';
-        wrapEnabled = s.wrap !== false;
-        toggleWordWrap();
+        zoomLevel = s.zoom || 1;
+        setZoom();
       }
       setTimeout(updateStats, 150);
     }
@@ -788,9 +1023,9 @@
     // Statistics
     function updateStats() {
       const text = document.getElementById('editor').innerText;
-      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
       const chars = text.length;
-      const lines = text.split('\n').length;
+      const lines = text ? text.split('\n').length : 0;
       document.getElementById('stats').textContent = `Words: ${words} | Chars: ${chars} | Lines: ${lines}`;
     }
     
@@ -802,6 +1037,19 @@
       autoSave();
     }
     
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+      const findModal = document.getElementById('findModal');
+      const replaceModal = document.getElementById('replaceModal');
+      
+      if (event.target == findModal) {
+        closeFindModal();
+      }
+      if (event.target == replaceModal) {
+        closeReplaceModal();
+      }
+    }
+    
     // Keyboard Shortcuts
     document.addEventListener('keydown', function(e) {
       if(e.ctrlKey || e.metaKey) {
@@ -809,6 +1057,10 @@
         if(e.key === 'o') { e.preventDefault(); document.getElementById('openfile').click(); }
         if(e.key === 'n') { e.preventDefault(); newFile(); }
         if(e.key === 'a') { selectAllText(); }
+        if(e.key === 'f') { e.preventDefault(); showFindModal(); }
+        if(e.key === 'h') { e.preventDefault(); showReplaceModal(); }
+        if(e.key === 'z' && !e.shiftKey) { e.preventDefault(); document.execCommand('undo', false); }
+        if(e.key === 'z' && e.shiftKey) { e.preventDefault(); document.execCommand('redo', false); }
       }
     });
   </script>
