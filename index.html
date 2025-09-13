@@ -1,21 +1,816 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Online Notepad</title>
-	<link rel="stylesheet" href="style.css">
-</head>
-<body>
-	<div class="notepad">
-		<textarea id="notepad" placeholder="Start typing..."></textarea>
-		<button id="save" onclick="saveFile()">Save As</button>
-		<button id="clear">Clear</button>
-		<button id="find">Find</button>
-		<input id="search" type="text" placeholder="Search...">
-		<div id="result"></div>
+  <meta charset="UTF-8" />
+  <title>Web Notepad Pro</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;500&family=Playfair+Display&family=Source+Code+Pro&family=Montserrat&family=Open+Sans&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-light: #4895ef;
+      --secondary: #3a0ca3;
+      --success: #4cc9f0;
+      --light-bg: #f8f9fa;
+      --light-text: #212529;
+      --light-border: #dee2e6;
+      --light-menu-bg: #ffffff;
+      --dark-bg: #1a1d21;
+      --dark-text: #e9ecef;
+      --dark-border: #495057;
+      --dark-menu-bg: #2d2d39;
+      --sepia-bg: #f4ecd8;
+      --sepia-text: #5a4a42;
+      --sepia-border: #c4b5a0;
+      --sepia-menu-bg: #f8f3e6;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --radius: 8px;
+      --transition: all 0.2s ease;
+    }
 
-		<input type="text" id="findText" placeholder="Find...">
-        <button onclick="findText()">Find</button>
-	</div>
-	<script src="script.js"></script>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition);
+    }
+
+    body[data-theme='light'] {
+      background-color: var(--light-bg);
+      color: var(--light-text);
+      --menu-bg: var(--light-menu-bg);
+      --border-color: var(--light-border);
+    }
+
+    body[data-theme='dark'] {
+      background-color: var(--dark-bg);
+      color: var(--dark-text);
+      --menu-bg: var(--dark-menu-bg);
+      --border-color: var(--dark-border);
+    }
+
+    body[data-theme='sepia'] {
+      background-color: var(--sepia-bg);
+      color: var(--sepia-text);
+      --menu-bg: var(--sepia-menu-bg);
+      --border-color: var(--sepia-border);
+    }
+
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 1rem;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+      font-size: 1.5rem;
+    }
+
+    .logo i {
+      color: var(--primary);
+    }
+
+    .main-content {
+      display: flex;
+      flex: 1;
+      gap: 1.5rem;
+      height: calc(100% - 120px);
+    }
+
+    .sidebar {
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .sidebar-section {
+      background: var(--menu-bg);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+    }
+
+    .section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary);
+    }
+
+    .section-title i {
+      font-size: 1rem;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.8rem;
+      border: none;
+      border-radius: var(--radius);
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: var(--transition);
+      text-align: left;
+      color: inherit;
+    }
+
+    .btn:hover {
+      background: var(--primary-light);
+      color: white;
+    }
+
+    .btn i {
+      width: 18px;
+      text-align: center;
+    }
+
+    .select-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    select {
+      padding: 0.6rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      font-family: inherit;
+      background: var(--menu-bg);
+      color: inherit;
+    }
+
+    .editor-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--menu-bg);
+      border: 1px solid var(--border-color);
+    }
+
+    #editor {
+      flex: 1;
+      padding: 1.5rem;
+      resize: none;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      line-height: 1.6;
+      font-family: 'Roboto Mono', monospace;
+      background: inherit;
+      color: inherit;
+      overflow-y: auto;
+    }
+
+    /* Fix for lists */
+    #editor ul, #editor ol {
+      padding-left: 2rem;
+      margin: 0.5rem 0;
+    }
+
+    #editor ul {
+      list-style-type: disc;
+    }
+
+    #editor ol {
+      list-style-type: decimal;
+    }
+
+    .format-toolbar {
+      display: flex;
+      gap: 0.25rem;
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      background: var(--menu-bg);
+    }
+
+    .format-btn {
+      padding: 0.5rem;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: inherit;
+      color: inherit;
+    }
+
+    .format-btn:hover {
+      background: var(--primary-light);
+      color: white;
+    }
+
+    .statusbar {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border-color);
+      background: var(--menu-bg);
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-item i {
+      color: var(--primary);
+    }
+
+    #autosave {
+      color: var(--success);
+      font-weight: 500;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Dropdown menu styles */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: var(--menu-bg);
+      min-width: 200px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      z-index: 1;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .dropdown:hover .dropdown-content {
+      display: flex;
+    }
+
+    .menu-btn {
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      background: var(--menu-bg);
+      color: inherit;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .menu-btn:hover {
+      background: var(--primary-light);
+      color: white;
+    }
+
+    .menu-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Print styles */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #editor, #editor * {
+        visibility: visible;
+      }
+      #editor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: auto;
+        border: none;
+        padding: 1in;
+        font-size: 12pt;
+        line-height: 1.5;
+        background: white !important;
+        color: black !important;
+      }
+      .app-container, .editor-container {
+        all: unset;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .main-content {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+      }
+      
+      .sidebar-section {
+        min-width: 200px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .sidebar {
+        flex-direction: column;
+      }
+      
+      .btn-group {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      
+      .btn {
+        flex: 1;
+        min-width: 120px;
+      }
+      
+      .format-toolbar {
+        justify-content: center;
+      }
+      
+      .statusbar {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .menu-bar {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <div class="app-container">
+    <div class="header">
+      <div class="logo">
+        <i class="fas fa-file-alt"></i>
+        <span>Web Notepad Pro</span>
+      </div>
+    </div>
+
+    <div class="menu-bar">
+      <div class="dropdown">
+        <button class="menu-btn"><i class="fas fa-file"></i> File</button>
+        <div class="dropdown-content">
+          <button class="btn" onclick="newFile()">
+            <i class="fas fa-plus"></i>
+            <span>New</span>
+          </button>
+          <input id="openfile" type="file" class="hidden" accept=".txt" onchange="openFile(event)">
+          <button class="btn" onclick="document.getElementById('openfile').click()">
+            <i class="fas fa-folder-open"></i>
+            <span>Open</span>
+          </button>
+          <button class="btn" onclick="saveFile()">
+            <i class="fas fa-save"></i>
+            <span>Save</span>
+          </button>
+          <button class="btn" onclick="saveFileAs()">
+            <i class="fas fa-save"></i>
+            <span>Save As</span>
+          </button>
+          <button class="btn" onclick="printDoc()">
+            <i class="fas fa-print"></i>
+            <span>Print</span>
+          </button>
+          <button class="btn" onclick="clearEditor()">
+            <i class="fas fa-trash"></i>
+            <span>Clear</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="dropdown">
+        <button class="menu-btn"><i class="fas fa-edit"></i> Edit</button>
+        <div class="dropdown-content">
+          <button class="btn" onclick="document.execCommand('undo')">
+            <i class="fas fa-undo"></i>
+            <span>Undo</span>
+          </button>
+          <button class="btn" onclick="document.execCommand('redo')">
+            <i class="fas fa-redo"></i>
+            <span>Redo</span>
+          </button>
+          <button class="btn" onclick="cutText()">
+            <i class="fas fa-cut"></i>
+            <span>Cut</span>
+          </button>
+          <button class="btn" onclick="copyText()">
+            <i class="fas fa-copy"></i>
+            <span>Copy</span>
+          </button>
+          <button class="btn" onclick="pasteText()">
+            <i class="fas fa-paste"></i>
+            <span>Paste</span>
+          </button>
+          <button class="btn" onclick="selectAllText()">
+            <i class="fas fa-select-all"></i>
+            <span>Select All</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="dropdown">
+        <button class="menu-btn"><i class="fas fa-font"></i> Format</button>
+        <div class="dropdown-content">
+          <div class="select-group">
+            <select id="fontfamily" onchange="setFontFamily(this.value)">
+              <option value="Inter">Inter</option>
+              <option value="Roboto Mono" selected>Roboto Mono</option>
+              <option value="Source Code Pro">Source Code Pro</option>
+              <option value="Montserrat">Montserrat</option>
+              <option value="Open Sans">Open Sans</option>
+              <option value="Playfair Display">Playfair Display</option>
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Courier New">Courier New</option>
+            </select>
+            <select id="fontsize" onchange="setFontSize(this.value)">
+              <option value="14px">Small</option>
+              <option value="16px" selected>Normal</option>
+              <option value="18px">Large</option>
+              <option value="20px">X-Large</option>
+              <option value="24px">XX-Large</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown">
+        <button class="menu-btn"><i class="fas fa-palette"></i> Theme</button>
+        <div class="dropdown-content">
+          <div class="select-group">
+            <select id="themechooser" onchange="setTheme(this.value)">
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="sepia">Sepia</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="editor-container">
+        <div class="format-toolbar">
+          <button class="format-btn" onclick="toggleTextStyle('bold')" title="Bold">
+            <i class="fas fa-bold"></i>
+          </button>
+          <button class="format-btn" onclick="toggleTextStyle('italic')" title="Italic">
+            <i class="fas fa-italic"></i>
+          </button>
+          <button class="format-btn" onclick="toggleTextStyle('underline')" title="Underline">
+            <i class="fas fa-underline"></i>
+          </button>
+          <button class="format-btn" onclick="toggleAlignment('left')" title="Align Left">
+            <i class="fas fa-align-left"></i>
+          </button>
+          <button class="format-btn" onclick="toggleAlignment('center')" title="Align Center">
+            <i class="fas fa-align-center"></i>
+          </button>
+          <button class="format-btn" onclick="toggleAlignment('right')" title="Align Right">
+            <i class="fas fa-align-right"></i>
+          </button>
+          <button class="format-btn" onclick="insertList('bullet')" title="Bullet List">
+            <i class="fas fa-list-ul"></i>
+          </button>
+          <button class="format-btn" onclick="insertList('number')" title="Numbered List">
+            <i class="fas fa-list-ol"></i>
+          </button>
+          <button class="format-btn" onclick="zoomIn()" title="Zoom In">
+            <i class="fas fa-search-plus"></i>
+          </button>
+          <button class="format-btn" onclick="zoomOut()" title="Zoom Out">
+            <i class="fas fa-search-minus"></i>
+          </button>
+          <button class="format-btn" onclick="resetZoom()" title="Reset Zoom">
+            <i class="fas fa-search"></i>
+          </button>
+          <button class="format-btn" onclick="toggleWordWrap()" title="Toggle Word Wrap">
+            <i class="fas fa-text-width"></i>
+          </button>
+        </div>
+
+        <div id="editor" contenteditable="true" spellcheck="false" oninput="autoSave(); updateStats()" style="word-wrap: break-word;"></div>
+
+        <div class="statusbar">
+          <div class="status-item">
+            <i class="fas fa-file"></i>
+            <span id="filename">Untitled.txt</span>
+          </div>
+          <div class="status-item">
+            <i class="fas fa-chart-bar"></i>
+            <span id="stats">Words: 0 | Chars: 0 | Lines: 0</span>
+          </div>
+          <div class="status-item">
+            <i class="fas fa-save"></i>
+            <span id="autosave">Auto-saved</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let filename = 'Untitled.txt';
+    let zoomLevel = 1.0;
+    let wrapEnabled = true;
+
+    function newFile() {
+      if(confirm("Create a new document? Unsaved changes will be lost.")) {
+        document.getElementById('editor').innerHTML = '';
+        filename = 'Untitled.txt';
+        document.getElementById('filename').textContent = filename;
+        autoSave();
+        updateStats();
+      }
+    }
+
+    function openFile(event) {
+      const file = event.target.files[0];
+      if(!file) return;
+      filename = file.name;
+      document.getElementById('filename').textContent = filename;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('editor').innerHTML = e.target.result;
+        updateStats();
+        autoSave();
+      }
+      reader.readAsText(file);
+      event.target.value = ''; // Reset input for repeated open
+    }
+
+    function saveFile() {
+      const blob = new Blob([document.getElementById('editor').innerText], { type: 'text/plain' });
+      download(blob, filename);
+    }
+
+    function saveFileAs() {
+      const name = prompt("Save As filename:", filename);
+      if(name) {
+        filename = name.endsWith('.txt') ? name : name + '.txt';
+        document.getElementById('filename').textContent = filename;
+        saveFile();
+      }
+    }
+
+    function download(blob, name) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    }
+
+    function printDoc() {
+      // Create a print-friendly version with formatting preserved
+      const printWindow = window.open('', '_blank');
+      const editorContent = document.getElementById('editor').innerHTML;
+      const fontFamily = document.getElementById('editor').style.fontFamily || 'Arial';
+      const fontSize = document.getElementById('editor').style.fontSize || '12pt';
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Print Document</title>
+          <style>
+            body {
+              font-family: ${fontFamily};
+              font-size: ${fontSize};
+              line-height: 1.6;
+              padding: 1in;
+              color: #000;
+              background: #fff;
+            }
+            ul, ol {
+              padding-left: 1.5em;
+            }
+            ul {
+              list-style-type: disc;
+            }
+            ol {
+              list-style-type: decimal;
+            }
+            @media print {
+              body {
+                padding: 0;
+                margin: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div>${editorContent}</div>
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // Wait for content to load before printing
+      setTimeout(function() {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+
+    function clearEditor() {
+      document.getElementById('editor').innerHTML = '';
+      updateStats();
+      autoSave();
+    }
+
+    // Edit actions
+    function cutText() { document.execCommand('cut'); }
+    function copyText() { document.execCommand('copy'); }
+    
+    // Fixed paste functionality
+    function pasteText() { 
+      // Focus on editor first
+      document.getElementById('editor').focus();
+      
+      // Use modern clipboard API if available
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(text => {
+          document.execCommand('insertText', false, text);
+        }).catch(err => {
+          // Fallback to traditional paste
+          document.execCommand('paste');
+        });
+      } else {
+        // Traditional paste method
+        document.execCommand('paste');
+      }
+    }
+    
+    function selectAllText() {
+      const editor = document.getElementById('editor');
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    // Zoom
+    function zoomIn() { zoomLevel *= 1.1; setZoom(); }
+    function zoomOut() { zoomLevel /= 1.1; setZoom(); }
+    function resetZoom() { zoomLevel = 1; setZoom(); }
+    function setZoom() {
+      document.getElementById('editor').style.fontSize = (16 * zoomLevel) + 'px';
+      // Fix for lists on zoom
+      document.getElementById('editor').style.paddingLeft = (1.5 * zoomLevel) + 'rem';
+      document.getElementById('editor').style.paddingRight = (1.5 * zoomLevel) + 'rem';
+    }
+
+    // Formatting
+    function setFontFamily(f) {
+      document.getElementById('editor').style.fontFamily = f;
+      autoSave();
+    }
+    function setFontSize(s) {
+      document.getElementById('editor').style.fontSize = s;
+      autoSave();
+    }
+    function toggleTextStyle(type) {
+      document.execCommand(type, false, null);
+    }
+    function toggleAlignment(type) {
+      document.execCommand('justify' + type, false, null);
+    }
+    function insertList(type) {
+      if(type === 'bullet')
+        document.execCommand('insertUnorderedList', false, null);
+      else
+        document.execCommand('insertOrderedList', false, null);
+    }
+    function toggleWordWrap() {
+      const editor = document.getElementById('editor');
+      wrapEnabled = !wrapEnabled;
+      editor.style.whiteSpace = wrapEnabled ? 'pre-wrap' : 'pre';
+      editor.style.overflowX = wrapEnabled ? 'visible' : 'auto';
+    }
+
+    // Auto-save/Load
+    function autoSave() {
+      const content = document.getElementById('editor').innerHTML;
+      const settings = {
+        filename: filename,
+        content: content,
+        font: document.getElementById('editor').style.fontFamily,
+        size: document.getElementById('editor').style.fontSize,
+        theme: document.body.getAttribute('data-theme'),
+        wrap: wrapEnabled,
+      };
+      localStorage.setItem('webnotepad_autosave', JSON.stringify(settings));
+      document.getElementById('autosave').textContent = "Auto-saved";
+    }
+    
+    function autoLoad() {
+      const save = localStorage.getItem('webnotepad_autosave');
+      if(save) {
+        const s = JSON.parse(save);
+        filename = s.filename || 'Untitled.txt';
+        document.getElementById('filename').textContent = filename;
+        document.getElementById('editor').innerHTML = s.content || '';
+        document.getElementById('editor').style.fontFamily = s.font || 'Roboto Mono';
+        document.getElementById('editor').style.fontSize = s.size || '16px';
+        document.body.setAttribute('data-theme', s.theme || 'light');
+        document.getElementById('themechooser').value = s.theme || 'light';
+        wrapEnabled = s.wrap !== false;
+        toggleWordWrap();
+      }
+      setTimeout(updateStats, 150);
+    }
+    
+    window.onload = autoLoad;
+    setInterval(autoSave, 6000);
+
+    // Statistics
+    function updateStats() {
+      const text = document.getElementById('editor').innerText;
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      const chars = text.length;
+      const lines = text.split('\n').length;
+      document.getElementById('stats').textContent = `Words: ${words} | Chars: ${chars} | Lines: ${lines}`;
+    }
+    
+    document.getElementById('editor').addEventListener('input', updateStats);
+
+    // Theme
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      autoSave();
+    }
+    
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', function(e) {
+      if(e.ctrlKey || e.metaKey) {
+        if(e.key === 's') { e.preventDefault(); saveFile(); }
+        if(e.key === 'o') { e.preventDefault(); document.getElementById('openfile').click(); }
+        if(e.key === 'n') { e.preventDefault(); newFile(); }
+        if(e.key === 'a') { selectAllText(); }
+      }
+    });
+  </script>
 </body>
 </html>
